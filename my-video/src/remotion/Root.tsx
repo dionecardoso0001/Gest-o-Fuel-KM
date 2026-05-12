@@ -9,6 +9,7 @@ import {
 } from "../../types/constants";
 import { Main } from "./MyComp/Main";
 import { NextLogo } from "./MyComp/NextLogo";
+import { WordByWord } from "./MyComp/WordByWord";
 
 export const RemotionRoot: React.FC = () => {
   return (
@@ -31,6 +32,17 @@ export const RemotionRoot: React.FC = () => {
         height={140}
         defaultProps={{
           outProgress: 0,
+        }}
+      />
+      <Composition
+        id="WordByWord"
+        component={WordByWord}
+        durationInFrames={200}
+        fps={VIDEO_FPS}
+        width={VIDEO_WIDTH}
+        height={VIDEO_HEIGHT}
+        defaultProps={{
+          sentence: "Cada palavra ganha vida uma por vez",
         }}
       />
     </>
