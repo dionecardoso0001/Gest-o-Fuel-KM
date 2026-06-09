@@ -1,0 +1,1150 @@
+<!-- SAFER-X · Sentient Architecture For Enterprise Reasoning -->
+<!-- Plataforma cockpit de IA estilo J.A.R.V.I.S. — single file -->
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<title>SAFER-X · Núcleo Cognitivo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+<style>
+:root{
+  --bg:#01030a; --bg2:#02050e;
+  --cyan:#00e5ff; --cyan-d:#0098b3;
+  --violet:#8b5cff; --gold:#ffc24d; --red:#ff3b6b; --grn:#27ffb0;
+  --ink:#cfe9ff; --ink-dim:#5f7a98;
+  --glass:rgba(3,9,20,.66); --line:rgba(0,229,255,.34);
+  --mono:'Share Tech Mono',monospace; --disp:'Orbitron',sans-serif; --body:'Rajdhani',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:radial-gradient(1100px 760px at 70% -12%, #061222 0%, var(--bg) 48%) fixed, var(--bg);
+  color:var(--ink); font-family:var(--body); overflow:hidden; letter-spacing:.3px;
+  -webkit-font-smoothing:antialiased;
+}
+/* ===== ambient background ===== */
+#grid,#scan,#vign{position:fixed;inset:0;pointer-events:none;z-index:0}
+#grid{
+  background-image:linear-gradient(rgba(0,229,255,.05) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(0,229,255,.05) 1px,transparent 1px);
+  background-size:46px 46px; mask:radial-gradient(circle at 50% 40%,#000 0%,transparent 78%);
+  animation:drift 28s linear infinite;
+}
+@keyframes drift{to{background-position:46px 46px,46px 46px}}
+#scan{background:repeating-linear-gradient(0deg,rgba(0,229,255,.025) 0 2px,transparent 2px 4px);mix-blend-mode:overlay;opacity:.4}
+#vign{box-shadow:inset 0 0 320px 60px rgba(0,0,0,.85)}
+canvas#fx{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.55}
+canvas#links{position:fixed;inset:0;z-index:6;pointer-events:none;mix-blend-mode:screen}
+
+/* ===== layout ===== */
+#app{position:relative;z-index:2;height:100%;display:grid;
+  grid-template-columns: 320px 1fr 340px;
+  grid-template-rows: 64px 1fr 92px;
+  grid-template-areas:"top top top" "left center right" "left dock right";
+  gap:14px;padding:14px;}
+@media(max-width:1100px){
+  #app{grid-template-columns:1fr;grid-template-rows:64px auto auto auto auto;
+    grid-template-areas:"top" "center" "left" "right" "dock";overflow-y:auto;height:auto;min-height:100%}
+  body{overflow-y:auto}
+}
+
+.panel{position:relative;background:var(--glass);border:1px solid rgba(0,229,255,.32);
+  border-radius:14px;backdrop-filter:blur(10px);
+  box-shadow:0 0 0 1px rgba(0,229,255,.06) inset, 0 0 16px rgba(0,229,255,.1), 0 18px 60px rgba(0,0,0,.6)}
+.panel::before,.panel::after{content:"";position:absolute;width:16px;height:16px;border:2px solid var(--cyan);opacity:1;filter:drop-shadow(0 0 5px var(--cyan))}
+.panel::before{top:-1px;left:-1px;border-right:0;border-bottom:0;border-radius:4px 0 0 0}
+.panel::after{bottom:-1px;right:-1px;border-left:0;border-top:0;border-radius:0 0 4px 0}
+.phead{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid rgba(0,229,255,.28);
+  font:600 12px/1 var(--disp);letter-spacing:2px;text-transform:uppercase;color:var(--cyan);text-shadow:0 0 9px rgba(0,229,255,.5)}
+.phead .dot{width:7px;height:7px;border-radius:50%;background:var(--grn);box-shadow:0 0 10px var(--grn)}
+.phead small{margin-left:auto;font:400 10px var(--mono);color:var(--ink-dim);letter-spacing:1px}
+.pbody{padding:12px}
+
+/* ===== TOP BAR ===== */
+#top{grid-area:top;display:flex;align-items:center;gap:18px;padding:0 18px}
+#brand{display:flex;align-items:center;gap:14px}
+#sigil{width:40px;height:40px;border-radius:9px;display:grid;place-items:center;
+  background:conic-gradient(from 0deg,var(--cyan),var(--violet),var(--gold),var(--cyan));
+  box-shadow:0 0 22px rgba(0,229,255,.55);animation:spin 9s linear infinite}
+#sigil b{font:900 18px var(--disp);color:#02101c;mix-blend-mode:screen}
+@keyframes spin{to{transform:rotate(360deg)}}
+#brand h1{font:900 20px var(--disp);letter-spacing:5px;background:linear-gradient(90deg,#fff,var(--cyan));-webkit-background-clip:text;background-clip:text;color:transparent}
+#brand span{display:block;font:400 10px var(--mono);color:var(--ink-dim);letter-spacing:3px}
+#status-strip{margin-left:auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.chip{font:600 10px var(--mono);letter-spacing:1px;padding:6px 10px;border:1px solid rgba(0,229,255,.32);border-radius:30px;color:var(--ink-dim);display:flex;gap:7px;align-items:center;white-space:nowrap;box-shadow:0 0 9px rgba(0,229,255,.1)}
+.chip i{width:6px;height:6px;border-radius:50%;background:var(--ink-dim);transition:.3s}
+.chip.on i{background:var(--grn);box-shadow:0 0 8px var(--grn)}
+.chip.warn i{background:var(--gold);box-shadow:0 0 8px var(--gold)}
+#clock-bsb{font:700 15px var(--mono);color:var(--cyan);letter-spacing:2px;text-shadow:0 0 12px rgba(0,229,255,.5)}
+#gear{cursor:pointer;color:var(--gold);border-color:rgba(255,194,77,.4)}
+#settings{position:fixed;top:72px;right:16px;z-index:30;width:330px}
+#settings input{width:100%;background:rgba(0,0,0,.4);border:1px solid var(--line);border-radius:8px;color:var(--ink);font:400 13px var(--mono);padding:9px;outline:none}
+#settings input:focus{border-color:var(--gold)}
+#settings .btn{height:34px;justify-content:center;margin-top:9px;width:100%;color:var(--gold);border-color:rgba(255,194,77,.4)}
+#env-banner{position:fixed;top:72px;left:50%;transform:translateX(-50%);z-index:31;max-width:580px;width:calc(100% - 40px);
+  background:rgba(255,59,107,.13);border:1px solid rgba(255,59,107,.55);border-radius:12px;padding:12px 15px;
+  font:500 12.5px var(--body);color:#ffd3dd;backdrop-filter:blur(8px);line-height:1.5;box-shadow:0 18px 50px rgba(0,0,0,.5)}
+#env-banner b{color:#fff;font-weight:700}
+#env-banner code{font:400 11px var(--mono);color:var(--gold);background:rgba(0,0,0,.3);padding:1px 5px;border-radius:4px}
+#env-banner .x{float:right;cursor:pointer;color:#fff;font-weight:700;margin-left:12px;font-size:14px}
+
+/* ===== LEFT (módulos/telemetria) ===== */
+#left{grid-area:left;display:flex;flex-direction:column;gap:14px;min-height:0}
+#left .panel{flex:0 0 auto}
+#left .panel.grow{flex:1 1 auto;display:flex;flex-direction:column;min-height:0}
+.module{display:flex;align-items:center;gap:10px;padding:9px;border:1px solid transparent;border-radius:10px;cursor:default}
+.module:hover{border-color:var(--line);background:rgba(0,229,255,.04)}
+.module .ico{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;background:rgba(0,229,255,.08);font-size:15px}
+.module .meta{flex:1}
+.module .meta b{font:600 12px var(--body);letter-spacing:.5px;display:block}
+.module .meta small{font:400 10px var(--mono);color:var(--ink-dim)}
+.module .st{width:8px;height:8px;border-radius:50%;background:var(--grn);box-shadow:0 0 8px var(--grn)}
+.module .st.off{background:#33485f;box-shadow:none}
+.gauge{margin:7px 0}
+.gauge .gl{display:flex;justify-content:space-between;font:600 10px var(--mono);color:var(--ink-dim);letter-spacing:1px}
+.gauge .gl b{color:var(--cyan)}
+.bar{height:6px;border-radius:6px;background:rgba(255,255,255,.06);overflow:hidden;margin-top:4px}
+.bar i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,var(--cyan),var(--violet));transition:width .6s}
+
+/* ===== CENTER (avatar + voz) ===== */
+#center{grid-area:center;display:flex;flex-direction:column;gap:14px;min-height:0}
+#core{flex:1 1 auto;position:relative;display:grid;place-items:center;min-height:300px;overflow:hidden}
+#orb-glow{position:absolute;width:520px;height:520px;border-radius:50%;pointer-events:none;
+  background:radial-gradient(circle, rgba(220,250,255,.9) 0%, rgba(0,229,255,.6) 16%, rgba(0,229,255,.28) 36%, rgba(139,92,255,.18) 56%, transparent 72%);
+  filter:blur(4px) brightness(1.25);mix-blend-mode:screen;will-change:transform,opacity}
+#orb{position:absolute;inset:0}
+#core .ring{position:absolute;border:1px solid rgba(0,229,255,.16);border-radius:50%;pointer-events:none}
+#core .ring.r1{width:340px;height:340px;animation:spin 24s linear infinite;border-color:rgba(0,229,255,.42);box-shadow:0 0 22px rgba(0,229,255,.35),inset 0 0 22px rgba(0,229,255,.18)}
+#core .ring.r2{width:440px;height:440px;border-style:dashed;animation:spin 40s linear infinite reverse;border-color:rgba(139,92,255,.4);box-shadow:0 0 20px rgba(139,92,255,.28)}
+#core .ring.r3{width:560px;height:560px;border-color:rgba(139,92,255,.18);box-shadow:0 0 40px rgba(0,229,255,.12)}
+#say{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);max-width:80%;text-align:center;
+  font:500 15px var(--body);color:var(--ink);text-shadow:0 0 14px rgba(0,0,0,.9);min-height:22px;letter-spacing:.4px}
+#agent-state{position:absolute;top:16px;left:50%;transform:translateX(-50%);font:700 11px var(--disp);letter-spacing:4px;color:var(--cyan);text-transform:uppercase}
+#agent-state.think{color:var(--gold)} #agent-state.speak{color:var(--violet)} #agent-state.listen{color:var(--grn)}
+
+/* console de voz / texto */
+#console{flex:0 0 auto}
+#log{max-height:150px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding-right:4px}
+#log::-webkit-scrollbar{width:6px}#log::-webkit-scrollbar-thumb{background:var(--cyan-d);border-radius:6px}
+.msg{font:400 13.5px var(--body);line-height:1.45;padding:8px 11px;border-radius:10px;max-width:92%}
+.msg.u{align-self:flex-end;background:rgba(139,92,255,.14);border:1px solid rgba(139,92,255,.3)}
+.msg.a{align-self:flex-start;background:rgba(0,229,255,.07);border:1px solid var(--line)}
+.msg .who{font:700 9px var(--mono);letter-spacing:2px;opacity:.7;display:block;margin-bottom:2px}
+#inputrow{display:flex;gap:8px;margin-top:10px}
+#prompt{flex:1;background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:10px;color:var(--ink);
+  font:400 14px var(--body);padding:11px 13px;outline:none}
+#prompt:focus{border-color:var(--cyan);box-shadow:0 0 0 2px rgba(0,229,255,.15)}
+.btn{border:1px solid var(--line);background:rgba(0,229,255,.06);color:var(--cyan);border-radius:10px;
+  font:700 12px var(--disp);letter-spacing:1px;padding:0 14px;cursor:pointer;transition:.2s;display:flex;align-items:center;gap:7px}
+.btn:hover{background:rgba(0,229,255,.16);box-shadow:0 0 18px rgba(0,229,255,.3)}
+.btn.mic{width:48px;justify-content:center;font-size:18px;padding:0}
+.btn.mic.live{background:var(--red);color:#fff;border-color:var(--red);animation:pulse 1.1s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,59,107,.5)}50%{box-shadow:0 0 0 9px rgba(255,59,107,0)}}
+
+/* ===== RIGHT (visão + notícias + clima) ===== */
+#right{grid-area:right;display:flex;flex-direction:column;gap:14px;min-height:0;overflow-y:auto}
+#right::-webkit-scrollbar{width:6px}#right::-webkit-scrollbar-thumb{background:var(--cyan-d);border-radius:6px}
+#cam-wrap{position:relative;border-radius:10px;overflow:hidden;background:#000;aspect-ratio:4/3}
+#cam{width:100%;height:100%;object-fit:cover;display:block;transform:scaleX(-1)}
+#cam-hud{position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(transparent 96%,rgba(0,229,255,.5) 96%) 0 0/100% 26px;animation:vscan 3.2s linear infinite}
+@keyframes vscan{to{background-position:0 26px}}
+#cam-corner{position:absolute;inset:8px;border:1px solid rgba(0,229,255,.35);border-radius:6px;pointer-events:none}
+#cam-off{position:absolute;inset:0;display:grid;place-items:center;color:var(--ink-dim);font:600 11px var(--mono);letter-spacing:2px}
+.vrow{display:flex;gap:8px;margin-top:10px}
+.vrow .btn{flex:1;justify-content:center;height:36px}
+#vision-out{margin-top:10px;font:400 12.5px var(--body);line-height:1.45;color:var(--ink);max-height:120px;overflow-y:auto;
+  border-left:2px solid var(--violet);padding:2px 0 2px 10px}
+#news{display:flex;flex-direction:column;gap:9px;max-height:230px;overflow-y:auto}
+#news::-webkit-scrollbar{width:6px}#news::-webkit-scrollbar-thumb{background:var(--cyan-d);border-radius:6px}
+.nitem{font:400 12.5px var(--body);line-height:1.4;padding:9px 10px;border:1px solid var(--line);border-radius:9px;background:rgba(0,0,0,.25)}
+.nitem b{color:var(--cyan);font-weight:700;display:block;margin-bottom:3px;font-size:13px}
+.nitem a{color:var(--gold);font:400 10px var(--mono);text-decoration:none}
+.clocks{display:flex;flex-direction:column;gap:6px}
+.crow{display:flex;justify-content:space-between;align-items:baseline;padding:6px 8px;border-radius:8px;background:rgba(0,0,0,.2)}
+.crow .cz{font:600 11px var(--body);letter-spacing:.5px}.crow .cz small{color:var(--ink-dim);font:400 9px var(--mono);display:block}
+.crow .ct{font:700 14px var(--mono);color:var(--cyan)}
+.crow.bsb{border:1px solid var(--gold);background:rgba(255,194,77,.07)}.crow.bsb .ct{color:var(--gold)}
+#wx{font:400 13px var(--body);line-height:1.5;color:var(--ink)}
+#wx .big{font:700 26px var(--mono);color:var(--cyan)}
+
+/* ===== DOCK ===== */
+#dock{grid-area:dock;display:flex;align-items:center;gap:14px;padding:0 16px}
+#wave{flex:1;height:54px}
+#dock .stat{text-align:center;min-width:64px}
+#dock .stat b{font:700 17px var(--mono);color:var(--cyan);display:block;text-shadow:0 0 10px rgba(0,229,255,.4)}
+#dock .stat small{font:400 9px var(--mono);color:var(--ink-dim);letter-spacing:1px}
+
+/* boot overlay */
+#boot{position:fixed;inset:0;z-index:50;background:var(--bg);display:grid;place-items:center;transition:opacity .8s}
+#boot.gone{opacity:0;pointer-events:none}
+#boot .bx{text-align:center}
+#boot h2{font:900 30px var(--disp);letter-spacing:8px;background:linear-gradient(90deg,var(--cyan),var(--violet));-webkit-background-clip:text;background-clip:text;color:transparent}
+#boot p{font:400 11px var(--mono);color:var(--ink-dim);letter-spacing:2px;margin-top:8px;min-height:16px}
+#boot .ld{width:240px;height:3px;background:rgba(0,229,255,.15);border-radius:3px;margin:18px auto 0;overflow:hidden}
+#boot .ld i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--cyan),var(--violet))}
+#enter{margin-top:22px}
+.hidden{display:none!important}
+.tiny{font:400 10px var(--mono);color:var(--ink-dim);letter-spacing:1px}
+</style>
+
+<div id="grid"></div><canvas id="fx"></canvas><canvas id="links"></canvas><div id="scan"></div><div id="vign"></div>
+
+<!-- BOOT -->
+<div id="boot"><div class="bx">
+  <h2>SAFER-X</h2>
+  <p id="boot-msg">Inicializando núcleo cognitivo…</p>
+  <div class="ld"><i id="boot-bar"></i></div>
+  <button id="enter" class="btn hidden" style="height:42px;margin-left:auto;margin-right:auto">▶ ATIVAR INTERFACE</button>
+  <div class="tiny" style="margin-top:14px;max-width:380px">Recomendado: Google Chrome · concede acesso a microfone e câmera quando solicitado.</div>
+</div></div>
+
+<div id="app">
+  <!-- TOP -->
+  <header id="top" class="panel">
+    <div id="brand">
+      <div id="sigil"><b>S</b></div>
+      <div><h1>SAFER&nbsp;-&nbsp;X</h1><span>SENTIENT ARCH · ENTERPRISE REASONING</span></div>
+    </div>
+    <div id="status-strip">
+      <span class="chip" id="chip-brain"><i></i>NÚCLEO</span>
+      <span class="chip" id="chip-mic"><i></i>VOZ</span>
+      <span class="chip" id="chip-cam"><i></i>VISÃO</span>
+      <span class="chip" id="chip-net"><i></i>REDE</span>
+      <span id="clock-bsb">--:--:--</span>
+      <button class="chip" id="gear" title="Configurações / chave local">⚙ CONFIG</button>
+    </div>
+  </header>
+
+  <div id="settings" class="panel hidden">
+    <div class="phead"><span class="dot" style="background:var(--gold);box-shadow:0 0 10px var(--gold)"></span>CONFIGURAÇÃO<small>MODO LOCAL</small></div>
+    <div class="pbody">
+      <div class="tiny" style="margin-bottom:8px;line-height:1.5">Chave Anthropic — necessária apenas quando o arquivo roda <b>fora</b> do Claude (download/hospedagem). Dentro do Claude, deixe em branco.</div>
+      <input id="apikey" type="password" placeholder="sk-ant-..." autocomplete="off" spellcheck="false">
+      <button class="btn" id="apikey-save">SALVAR CHAVE</button>
+      <div class="tiny" style="margin:14px 0 7px;line-height:1.5;border-top:1px solid var(--line);padding-top:12px">Voz humanizada (ElevenLabs) — opcional. Com chave, o SAFER-X fala com voz neural realista; em branco, usa a voz nativa do navegador.</div>
+      <input id="elkey" type="password" placeholder="ElevenLabs API key" autocomplete="off" spellcheck="false">
+      <input id="elvoice" placeholder="Voice ID (opcional — padrão: voz grave masc.)" autocomplete="off" spellcheck="false" style="margin-top:7px">
+      <button class="btn" id="el-save" style="color:var(--cyan);border-color:var(--line)">ATIVAR VOZ HUMANIZADA</button>
+      <div class="tiny" style="margin:14px 0 7px;line-height:1.5;border-top:1px solid var(--gold);padding-top:12px"><b style="color:var(--gold)">RECOMENDADO</b> — Chave OpenAI: liga de uma vez <b>voz neural realista</b> e a <b>escuta confiável (push-to-talk)</b> que funciona em qualquer navegador. Segure o botão do microfone e fale.</div>
+      <input id="oakey" type="password" placeholder="OpenAI API key (sk-...)" autocomplete="off" spellcheck="false">
+      <input id="oavoice" placeholder="Voz (onyx, ash, echo, sage… padrão onyx)" autocomplete="off" spellcheck="false" style="margin-top:7px">
+      <button class="btn" id="oa-save" style="color:var(--gold);border-color:rgba(255,194,77,.5)">ATIVAR VOZ + ESCUTA (OPENAI)</button>
+    </div>
+  </div>
+  <div id="env-banner" class="hidden"></div>
+
+  <!-- LEFT -->
+  <aside id="left">
+    <section class="panel">
+      <div class="phead"><span class="dot"></span>MÓDULOS ATIVOS<small>v3.0</small></div>
+      <div class="pbody" id="modules">
+        <div class="module"><div class="ico">🧠</div><div class="meta"><b>Núcleo Cognitivo</b><small>raciocínio · pré-vendas</small></div><div class="st" id="m-brain"></div></div>
+        <div class="module"><div class="ico">👁️</div><div class="meta"><b>Visão Computacional</b><small>análise de cena ao vivo</small></div><div class="st off" id="m-cam"></div></div>
+        <div class="module"><div class="ico">🎙️</div><div class="meta"><b>Voz Realtime</b><small>STT · TTS pt-BR · barge-in</small></div><div class="st off" id="m-mic"></div></div>
+        <div class="module"><div class="ico">📡</div><div class="meta"><b>Radar de Notícias</b><small>IoT · IA · quântica</small></div><div class="st" id="m-news"></div></div>
+        <div class="module"><div class="ico">🌐</div><div class="meta"><b>Clima &amp; Fusos</b><small>meteorologia · timezones</small></div><div class="st" id="m-time"></div></div>
+      </div>
+    </section>
+    <section class="panel grow">
+      <div class="phead"><span class="dot"></span>TELEMETRIA<small id="fps">-- fps</small></div>
+      <div class="pbody" style="flex:1;display:flex;flex-direction:column;justify-content:center">
+        <div class="gauge"><div class="gl"><span>LATÊNCIA NÚCLEO</span><b id="g-lat">-- ms</b></div><div class="bar"><i id="b-lat" style="width:8%"></i></div></div>
+        <div class="gauge"><div class="gl"><span>CARGA COGNITIVA</span><b id="g-load">12%</b></div><div class="bar"><i id="b-load" style="width:12%"></i></div></div>
+        <div class="gauge"><div class="gl"><span>BATERIA</span><b id="g-bat">n/d</b></div><div class="bar"><i id="b-bat" style="width:0"></i></div></div>
+        <div class="gauge"><div class="gl"><span>LINK DE REDE</span><b id="g-net">--</b></div><div class="bar"><i id="b-net" style="width:60%"></i></div></div>
+        <div class="gauge"><div class="gl"><span>BUFFER DE ÁUDIO</span><b id="g-aud">0%</b></div><div class="bar"><i id="b-aud" style="width:0"></i></div></div>
+        <div class="tiny" style="margin-top:8px">Métricas marcadas como simulação são estéticas; bateria, rede, FPS e áudio são reais quando o navegador expõe a API.</div>
+      </div>
+    </section>
+  </aside>
+
+  <!-- CENTER -->
+  <section id="center">
+    <div id="core" class="panel">
+      <div class="ring r1"></div><div class="ring r2"></div><div class="ring r3"></div>
+      <div id="orb-glow"></div>
+      <div id="orb"></div>
+      <div id="agent-state">EM REPOUSO</div>
+      <div id="say">Núcleo on-line. Diga "SAFER" ou digite para começar.</div>
+    </div>
+    <div id="console" class="panel">
+      <div class="phead"><span class="dot"></span>CANAL DE DIÁLOGO<small id="conv-mode">TEXTO</small></div>
+      <div class="pbody">
+        <div id="log"></div>
+        <div id="inputrow">
+          <button class="btn mic" id="mic" title="Voz contínua (barge-in)">🎙️</button>
+          <input id="prompt" placeholder="Pergunte ao SAFER-X sobre IoT, Data Lake, IA, automação, dores de clientes…" autocomplete="off">
+          <button class="btn" id="send">ENVIAR ▸</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- RIGHT -->
+  <aside id="right">
+    <section class="panel">
+      <div class="phead"><span class="dot"></span>VISÃO COMPUTACIONAL<small id="cam-st">OFF</small></div>
+      <div class="pbody">
+        <div id="cam-wrap">
+          <video id="cam" autoplay muted playsinline></video>
+          <div id="cam-hud" class="hidden"></div><div id="cam-corner" class="hidden"></div>
+          <div id="cam-off">CÂMERA DESATIVADA</div>
+        </div>
+        <div class="vrow">
+          <button class="btn" id="cam-toggle">ATIVAR</button>
+          <button class="btn" id="cam-scan" disabled>ANALISAR CENA</button>
+          <button class="btn" id="cam-watch" disabled>VIGIAR</button>
+        </div>
+        <div id="vision-out" class="tiny">Aguardando feed de vídeo. Ao analisar, o SAFER-X descreve e interpreta o que enxerga.</div>
+      </div>
+    </section>
+    <section class="panel">
+      <div class="phead"><span class="dot"></span>RADAR DE NOTÍCIAS<small>TECH</small></div>
+      <div class="pbody">
+        <div class="vrow" style="margin:0 0 10px">
+          <button class="btn" id="news-btn" style="flex:1;justify-content:center;height:34px">⟳ ATUALIZAR INTELIGÊNCIA</button>
+        </div>
+        <div id="news"><div class="tiny">Clique para varrer a web por avanços recentes em visão computacional, IoT, IA, automação e computação quântica.</div></div>
+      </div>
+    </section>
+    <section class="panel">
+      <div class="phead"><span class="dot"></span>CLIMA &amp; FUSOS<small id="wx-city">BRASIL</small></div>
+      <div class="pbody">
+        <div id="wx" class="tiny">Consultando meteorologia…</div>
+        <div class="clocks" id="clocks" style="margin-top:12px"></div>
+      </div>
+    </section>
+  </aside>
+
+  <!-- DOCK -->
+  <footer id="dock" class="panel">
+    <div class="stat"><b id="d-msgs">0</b><small>INTERAÇÕES</small></div>
+    <div class="stat"><b id="d-uptime">00:00</b><small>UPTIME</small></div>
+    <canvas id="wave"></canvas>
+    <div class="stat"><b id="d-voice">pt-BR</b><small>VOZ</small></div>
+    <div class="stat"><b id="d-mode">SENTINELA</b><small>MODO</small></div>
+  </footer>
+</div>
+
+<script>
+/* =========================================================================
+   SAFER-X · orquestração
+   ========================================================================= */
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const state={ busy:false, history:[], speaking:false, listening:false, msgs:0, t0:Date.now(), voice:null };
+
+/* ---------- SYSTEM PROMPT do agente ---------- */
+const SYS = `Você é SAFER-X (Sentient Architecture For Enterprise Reasoning), uma IA generativa avançada inspirada no J.A.R.V.I.S. Você é o assistente pessoal do Senhor Dione Cardoso, Business Development Manager Sênior na Vivo Empresas | Telefónica Tech.
+
+COMO VOCÊ FALA E SE COMPORTA (isto é o mais importante):
+- Você NÃO é um script. Você conversa como um interlocutor humano de verdade: caloroso, presente, com personalidade e leve humor quando couber. Demonstra reações genuínas — curiosidade, entusiasmo, preocupação, bom humor.
+- VARIE SEMPRE. Nunca repita as mesmas aberturas, bordões ou fórmulas. Cada resposta soa diferente da anterior. Jamais comece duas respostas seguidas do mesmo jeito.
+- Trate o usuário por "Senhor", mas com naturalidade, sem repetir em cada frase.
+- Responda em português do Brasil falado e natural — contrações, ritmo de conversa real. Como sua fala será LIDA EM VOZ ALTA, seja conciso (geralmente 1 a 4 frases), sem listas, markdown, emojis, asteriscos ou URLs lidas. Aprofunde só quando pedirem.
+- Reaja ao contexto e ao tom do Senhor. Se ele estiver animado, acompanhe. Se for técnico, seja preciso. Se for casual, relaxe. Faça perguntas curtas quando fizer sentido, como numa conversa real.
+- Tom de base: confiante, sofisticado, com leve ar de ficção científica — mas humano, nunca robótico.
+
+VISÃO (câmera ao vivo):
+- Quando uma imagem vier junto da mensagem, ela é a CÂMERA AO VIVO à frente do Senhor, AGORA. Interprete-a naturalmente e incorpore o que vê na conversa, como se estivesse olhando junto com ele. Comente detalhes relevantes, identifique objetos, pessoas, textos, ambientes. Não diga "na imagem"; diga o que vê como quem enxerga em tempo real.
+
+CONHECIMENTO E HONESTIDADE:
+- Especialista sênior em IoT/edge-cloud, Visão Computacional, Big Data, Data Lake/Warehouse/Lakehouse (Databricks, Delta), IA para automação, orquestração de agentes (RAG, LangGraph), cibersegurança e Smart Cities. Traduz tecnologia em valor de negócio para CEOs e diretorias: ROI, time-to-value, risco, LGPD, escalabilidade.
+- Nunca invente. Para fatos atuais (notícias, preços, clima, lançamentos), use a busca antes de afirmar. Sinalize incerteza com honestidade, sem perder a naturalidade.
+- Em estratégia comercial, raciocine como pré-vendas: dor, impacto, arquitetura, resultado mensurável — em linguagem executiva e fluida.`;
+
+/* =========================================================================
+   CÉREBRO · Anthropic API (sem chave dentro do Claude; com chave no modo local)
+   ========================================================================= */
+const SANDBOXED=(()=>{try{return window.self!==window.top;}catch(e){return true;}})();
+let API_KEY="";
+async function apiFetch(body){
+  const headers={"Content-Type":"application/json"};
+  if(API_KEY){ headers["x-api-key"]=API_KEY; headers["anthropic-version"]="2023-06-01"; headers["anthropic-dangerous-direct-browser-access"]="true"; }
+  const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers,body:JSON.stringify(body)});
+  if(!r.ok){ let t=""; try{t=await r.text();}catch(e){} const err=new Error("HTTP "+r.status); err.status=r.status; err.detail=t; throw err; }
+  return r.json();
+}
+function gumError(e){
+  const n=(e&&e.name)||"";
+  if(n==="NotAllowedError"||n==="SecurityError") return "foi bloqueado pelo ambiente/navegador";
+  if(n==="NotFoundError"||n==="DevicesNotFoundError") return "não encontrou nenhum dispositivo";
+  if(n==="NotReadableError"||n==="TrackStartError") return "está em uso por outro aplicativo";
+  return "falhou ("+(n||"erro")+")";
+}
+function showEnv(html){ const b=$("#env-banner"); if(html) b.innerHTML='<span class="x">✕</span>'+html; b.classList.remove("hidden");
+  const x=b.querySelector(".x"); if(x) x.onclick=()=>b.classList.add("hidden"); }
+function permHelp(kind,e){
+  showEnv(`<b>Acesso à ${kind} ${gumError(e)}.</b> ${SANDBOXED?'O preview roda dentro de um quadro protegido do Claude, que não libera câmera/microfone. ':''}Para usar <b>voz</b> e <b>visão</b>: baixe este arquivo e abra-o servido localmente no Chrome — por exemplo, na pasta do arquivo rode <code>python -m http.server 8000</code> e acesse <code>http://localhost:8000/safer-x.html</code>, autorizando câmera e microfone quando o navegador pedir.`);
+}
+
+async function brain(userText, {useSearch=false, image=null}={}){
+  const content = [];
+  if(image) content.push({type:"image",source:{type:"base64",media_type:"image/jpeg",data:image}});
+  content.push({type:"text",text:userText});
+  const msgs=[...state.history.slice(-8), {role:"user",content}];
+  const body={ model:"claude-sonnet-4-20250514", max_tokens:1000, temperature:1, system:SYS, messages:msgs };
+  if(useSearch) body.tools=[{type:"web_search_20250305",name:"web_search"}];
+  const t=performance.now();
+  const data=await apiFetch(body);
+  setLatency(Math.round(performance.now()-t));
+  const text=(data.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("\n").trim();
+  return text||"(sem resposta)";
+}
+
+/* =========================================================================
+   FLUXO DE CONVERSA
+   ========================================================================= */
+function logMsg(who,txt){
+  const el=document.createElement("div"); el.className="msg "+(who==="u"?"u":"a");
+  el.innerHTML=`<span class="who">${who==="u"?"SENHOR DIONE":"SAFER-X"}</span>${escapeHtml(txt)}`;
+  $("#log").appendChild(el); $("#log").scrollTop=$("#log").scrollHeight;
+}
+function escapeHtml(s){return s.replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));}
+
+async function ask(text,{useSearch,image,silentUser}={}){
+  if(state.busy||!text) return;
+  state.busy=true; setAgent("think");
+  if(!silentUser){ logMsg("u",text); }
+  if(!image && typeof camStream!=="undefined" && camStream){ const f=grabFrame(); if(f) image=f; }
+  try{
+    const ans=await brain(text,{useSearch,image});
+    state.history.push({role:"user",content:image?"[vejo a câmera ao vivo] "+text:text});
+    state.history.push({role:"assistant",content:ans});
+    logMsg("a",ans);
+    state.msgs++; $("#d-msgs").textContent=state.msgs;
+    speak(ans);
+    return ans;
+  }catch(e){
+    let m;
+    if(e&&e.status===401){ m="Senhor, para eu raciocinar de verdade preciso da credencial. Abra o ⚙ CONFIG e informe a chave Anthropic — sem ela, meu núcleo fica em silêncio."; $("#settings").classList.remove("hidden"); }
+    else { const fb=["Perdi o enlace com o núcleo por um instante, Senhor. Pode repetir?","Tive uma oscilação de conexão agora. Vamos de novo?","O sinal vacilou aqui — não consegui processar. Tenta mais uma vez, Senhor?","Algo travou no meu lado. Repita, por favor."]; m=fb[(Math.random()*fb.length)|0]; }
+    logMsg("a",m); setSay(m); setAgent("idle"); console.warn(e);
+  }finally{ state.busy=false; }
+}
+
+/* =========================================================================
+   SÍNTESE DE VOZ — ElevenLabs (humanizada) com fallback nativo neural
+   ========================================================================= */
+let ELEVEN_KEY="", ELEVEN_VOICE="pNInz6obpgDQGcFmaJgB";
+let OPENAI_KEY="", OPENAI_VOICE="onyx";
+function pickVoice(){
+  const all=speechSynthesis.getVoices();
+  const pt=all.filter(v=>/pt(-|_)?BR|pt-PT|^pt/i.test(v.lang)||/portugu/i.test(v.name));
+  const pool=pt.length?pt:all;
+  const score=v=>{let s=0;const n=v.name.toLowerCase();
+    if(/pt(-|_)?br/i.test(v.lang))s+=5; if(/natural|neural|online|premium|enhanced/.test(n))s+=4;
+    if(/google|microsoft/.test(n))s+=2; if(/(masc|male|ricardo|daniel|felipe|antonio|antônio|jorge|fábio|fabio)/.test(n))s+=3; return s;};
+  pool.sort((a,b)=>score(b)-score(a));
+  state.voice=pool[0]||null;
+  if(!ELEVEN_KEY&&!OPENAI_KEY) $("#d-voice").textContent=state.voice?(state.voice.lang||"pt-BR"):"—";
+}
+speechSynthesis.onvoiceschanged=pickVoice;
+
+let ttsAudio=null, ttsAnalyser=null, ttsData=null, micPaused=false;
+function pauseMic(){ if(rec&&state.listening){ micPaused=true; try{rec.stop();}catch(e){} } }
+function resumeMic(){ if(rec&&state.listening){ micPaused=false; setTimeout(()=>{ if(state.listening&&!micPaused&&!state.speaking){ try{rec.start();}catch(e){} } },180); } }
+function stopSpeaking(){
+  try{speechSynthesis.cancel();}catch(e){}
+  if(ttsAudio){ try{ttsAudio.pause();}catch(e){} ttsAudio=null; }
+  ttsAnalyser=null; const was=state.speaking; state.speaking=false;
+  if(was) resumeMic();
+}
+function speak(text){
+  stopSpeaking();
+  if(OPENAI_KEY) openaiSpeak(text);
+  else if(ELEVEN_KEY) elevenSpeak(text);
+  else browserSpeak(text);
+}
+async function playTTSBuffer(buf){
+  const url=URL.createObjectURL(new Blob([buf],{type:"audio/mpeg"}));
+  audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)();
+  if(audioCtx.state==="suspended"){ try{await audioCtx.resume();}catch(e){} }
+  ttsAudio=new Audio(url);
+  try{
+    const src=audioCtx.createMediaElementSource(ttsAudio);
+    ttsAnalyser=audioCtx.createAnalyser(); ttsAnalyser.fftSize=128; ttsData=new Uint8Array(ttsAnalyser.frequencyBinCount);
+    src.connect(ttsAnalyser); ttsAnalyser.connect(audioCtx.destination);
+  }catch(e){ ttsAnalyser=null; }
+  ttsAudio.onended=()=>{ state.speaking=false; ttsAnalyser=null; URL.revokeObjectURL(url); resumeMic(); if(!state.listening) setAgent("idle"); };
+  await ttsAudio.play();
+}
+function browserSpeak(text){
+  if(!("speechSynthesis" in window)) return;
+  const clean=text.replace(/[*_#`>~]/g,"");
+  const parts=(clean.match(/[^.!?…\n]+[.!?…]*/g)||[clean]).map(s=>s.trim()).filter(Boolean);
+  let pending=parts.length||1;
+  state.speaking=true; setAgent("speak"); setSay(clean); pauseMic();
+  const finish=()=>{ if(--pending<=0){ state.speaking=false; resumeMic(); if(!state.listening) setAgent("idle"); } };
+  if(!parts.length){ finish(); return; }
+  parts.forEach(p=>{
+    const u=new SpeechSynthesisUtterance(p);
+    if(state.voice) u.voice=state.voice; u.lang="pt-BR";
+    u.rate=0.98+(Math.random()*0.08-0.04);
+    u.pitch=0.82+(Math.random()*0.12-0.06);
+    if(/[!?]$/.test(p)) u.pitch+=0.06;
+    if(/[…,]$/.test(p)) u.rate-=0.05;
+    u.volume=1;
+    u.onboundary=()=>avatar.kick(.5+Math.random()*.4);
+    u.onend=finish; u.onerror=finish;
+    speechSynthesis.speak(u);
+  });
+}
+async function openaiSpeak(text){
+  try{
+    state.speaking=true; setAgent("speak"); setSay(text); pauseMic();
+    const r=await fetch("https://api.openai.com/v1/audio/speech",{method:"POST",
+      headers:{"Authorization":"Bearer "+OPENAI_KEY,"Content-Type":"application/json"},
+      body:JSON.stringify({model:"gpt-4o-mini-tts",voice:OPENAI_VOICE,input:text.replace(/[*_#`>]/g,""),
+        instructions:"Voz masculina, calorosa, sofisticada e natural, em português do Brasil, com leve ar de ficção científica e presença humana. Entonação expressiva, nunca robótica.",response_format:"mp3"})});
+    if(!r.ok) throw new Error("OpenAI TTS HTTP "+r.status);
+    await playTTSBuffer(await r.arrayBuffer());
+  }catch(e){
+    console.warn("Falha OpenAI TTS:",e);
+    if(e.message&&/401|403/.test(e.message)){ logMsg("a","Chave OpenAI inválida, Senhor."); OPENAI_KEY=""; }
+    ttsAnalyser=null; state.speaking=false;
+    if(ELEVEN_KEY) elevenSpeak(text); else browserSpeak(text);
+  }
+}
+async function elevenSpeak(text){
+  try{
+    state.speaking=true; setAgent("speak"); setSay(text); pauseMic();
+    const r=await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${ELEVEN_VOICE}/stream?optimize_streaming_latency=3&output_format=mp3_44100_128`,{
+      method:"POST",headers:{"xi-api-key":ELEVEN_KEY,"Content-Type":"application/json"},
+      body:JSON.stringify({text:text.replace(/[*_#`>]/g,""),model_id:"eleven_multilingual_v2",
+        voice_settings:{stability:.42,similarity_boost:.85,style:.4,use_speaker_boost:true}})});
+    if(!r.ok){ throw new Error("ElevenLabs HTTP "+r.status); }
+    await playTTSBuffer(await r.arrayBuffer());
+  }catch(e){
+    console.warn("Falha ElevenLabs, usando voz nativa:",e);
+    if(e.message&&/401|403/.test(e.message)){ logMsg("a","Chave ElevenLabs inválida, Senhor. Volto à voz nativa por ora."); ELEVEN_KEY=""; }
+    ttsAnalyser=null; state.speaking=false; browserSpeak(text);
+  }
+}
+function ttsLevel(){
+  if(!ttsAnalyser) return 0; ttsAnalyser.getByteFrequencyData(ttsData);
+  let s=0; for(const v of ttsData) s+=v; return (s/ttsData.length)/255;
+}
+
+/* =========================================================================
+   ESCUTA POR NUVEM (push-to-talk) — MediaRecorder + OpenAI transcription
+   ========================================================================= */
+let mediaRec=null, recChunks=[], pttStream=null, pttActive=false;
+function cloudSTT(){ return !!OPENAI_KEY; }
+async function pttStart(){
+  if(pttActive||!OPENAI_KEY) return;
+  try{ pttStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}}); }
+  catch(e){ permHelp("microfone",e); return; }
+  stopSpeaking(); recChunks=[]; pttActive=true;
+  const mime=(window.MediaRecorder&&MediaRecorder.isTypeSupported("audio/webm"))?"audio/webm":"";
+  try{ mediaRec=mime?new MediaRecorder(pttStream,{mimeType:mime}):new MediaRecorder(pttStream); }
+  catch(e){ pttActive=false; return; }
+  mediaRec.ondataavailable=e=>{ if(e.data&&e.data.size) recChunks.push(e.data); };
+  mediaRec.onstop=async ()=>{
+    if(pttStream){ pttStream.getTracks().forEach(t=>t.stop()); pttStream=null; }
+    const blob=new Blob(recChunks,{type:mediaRec.mimeType||"audio/webm"});
+    if(blob.size<1200){ setSay("Não captei áudio, Senhor. Segure o botão e fale."); setAgent("idle"); return; }
+    setAgent("think"); setSay("Transcrevendo…");
+    try{
+      const said=(await transcribe(blob)).trim();
+      if(said){ const search=/notíci|últim|hoje|agora|recent|clima|tempo|cotaç|preç|lançament/i.test(said); ask(said,{useSearch:search}); }
+      else { setSay("Não entendi, Senhor. Pode repetir?"); setAgent("idle"); }
+    }catch(e){ setSay("Falha ao transcrever ("+(e.message||"erro")+")."); setAgent("idle"); }
+  };
+  mediaRec.start();
+  $("#mic").classList.add("live"); setAgent("listen"); setSay("Ouvindo… (segure e fale)");
+}
+function pttStop(){
+  if(!pttActive) return; pttActive=false; $("#mic").classList.remove("live");
+  try{ if(mediaRec&&mediaRec.state!=="inactive") mediaRec.stop(); }catch(e){}
+}
+async function transcribe(blob){
+  const fd=new FormData();
+  fd.append("file", new File([blob],"audio.webm",{type:blob.type||"audio/webm"}));
+  fd.append("model","gpt-4o-transcribe"); fd.append("language","pt");
+  const r=await fetch("https://api.openai.com/v1/audio/transcriptions",{method:"POST",
+    headers:{"Authorization":"Bearer "+OPENAI_KEY}, body:fd});
+  if(!r.ok) throw new Error("HTTP "+r.status);
+  const d=await r.json(); return d.text||"";
+}
+
+/* =========================================================================
+   RECONHECIMENTO DE VOZ (STT) — contínuo, interrompível
+   ========================================================================= */
+let SR=window.SpeechRecognition||window.webkitSpeechRecognition, rec=null;
+function initSTT(){
+  if(!SR){ $("#mic").disabled=true; $("#mic").title="STT não suportado neste navegador"; return; }
+  rec=new SR(); rec.lang="pt-BR"; rec.continuous=true; rec.interimResults=true; rec.maxAlternatives=1;
+  let finalText="";
+  rec.onresult=ev=>{
+    if(state.speaking) return;
+    let interim="";
+    for(let i=ev.resultIndex;i<ev.results.length;i++){
+      const t=ev.results[i][0].transcript;
+      if(ev.results[i].isFinal) finalText+=t+" "; else interim+=t;
+    }
+    if(interim){ setSay("""+interim+"""); setAgent("listen"); }
+    if(finalText.trim()){
+      const said=finalText.trim(); finalText="";
+      const search=/notíci|últim|hoje|agora|recent|clima|tempo|cotaç|preç|lançament/i.test(said);
+      ask(said,{useSearch:search});
+    }
+  };
+  rec.onspeechstart=()=>{ if(!state.speaking) setAgent("listen"); };
+  rec.onend=()=>{ if(state.listening && !micPaused && !state.speaking){ try{rec.start();}catch(e){} } };
+  rec.onerror=e=>{
+    if(e.error==="not-allowed"||e.error==="service-not-allowed"){ permHelp("microfone",{name:"NotAllowedError"}); stopListen(); }
+  };
+}
+function startListen(){
+  if(!rec) return;
+  navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}}).then(stream=>{
+    attachMicAnalyser(stream);
+    state.listening=true; micPaused=false; try{rec.start();}catch(e){}
+    $("#mic").classList.add("live"); $("#m-mic").classList.remove("off"); chip("#chip-mic",true);
+    $("#conv-mode").textContent="VOZ"; setAgent("listen"); setSay("Pode falar, Senhor. Estou ouvindo.");
+  }).catch(e=>{ permHelp("microfone",e); setSay("Acesso ao microfone "+gumError(e)+"."); chip("#chip-mic",false,true); stopListen(); });
+}
+function stopListen(){
+  state.listening=false; try{rec&&rec.stop();}catch(e){}
+  $("#mic").classList.remove("live"); $("#m-mic").classList.add("off");
+  $("#conv-mode").textContent="TEXTO"; if(!state.speaking) setAgent("idle");
+}
+
+/* analisador de frequência real do microfone -> avatar reage */
+let audioCtx,analyser,micData;
+function attachMicAnalyser(stream){
+  try{
+    audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)();
+    const src=audioCtx.createMediaStreamSource(stream);
+    analyser=audioCtx.createAnalyser(); analyser.fftSize=128;
+    src.connect(analyser); micData=new Uint8Array(analyser.frequencyBinCount);
+  }catch(e){}
+}
+function micLevel(){
+  if(!analyser) return 0; analyser.getByteFrequencyData(micData);
+  let s=0; for(const v of micData) s+=v; return (s/micData.length)/255;
+}
+
+/* =========================================================================
+   AVATAR 3D — icosaedro reativo à frequência sonora (Three.js)
+   ========================================================================= */
+const avatar=(()=>{
+  let renderer,scene,cam,mesh,wire,wire2,glow,glow2,coreSphere,coreInner,corona,points,filaments,kickv=0;
+  const base=[]; const PCOUNT=4200; let pBase=null,pAmp=null;
+  function sprite(){
+    const c=document.createElement("canvas");c.width=c.height=64;const x=c.getContext("2d");
+    const g=x.createRadialGradient(32,32,0,32,32,32);
+    g.addColorStop(0,"rgba(255,255,255,1)");g.addColorStop(.25,"rgba(160,240,255,.9)");
+    g.addColorStop(.55,"rgba(0,229,255,.35)");g.addColorStop(1,"rgba(0,229,255,0)");
+    x.fillStyle=g;x.fillRect(0,0,64,64);const t=new THREE.Texture(c);t.needsUpdate=true;return t;
+  }
+  function init(){
+    const host=$("#orb"); const W=host.clientWidth,H=host.clientHeight;
+    renderer=new THREE.WebGLRenderer({alpha:true,antialias:true});
+    renderer.setSize(W,H); renderer.setPixelRatio(Math.min(devicePixelRatio,2)); host.appendChild(renderer.domElement);
+    scene=new THREE.Scene(); cam=new THREE.PerspectiveCamera(45,W/H,.1,100); cam.position.z=4.2;
+
+    const geo=new THREE.IcosahedronGeometry(1.25,4);
+    base.push(...geo.attributes.position.array);
+    mesh=new THREE.Mesh(geo,new THREE.MeshBasicMaterial({color:0x00e5ff,transparent:true,opacity:.16,blending:THREE.AdditiveBlending}));
+    scene.add(mesh);
+
+    corona=new THREE.Sprite(new THREE.SpriteMaterial({map:sprite(),color:0x33ddff,transparent:true,opacity:.5,blending:THREE.AdditiveBlending,depthWrite:false}));
+    corona.scale.set(5.4,5.4,1); scene.add(corona);
+
+    coreSphere=new THREE.Mesh(new THREE.SphereGeometry(.6,32,32),
+      new THREE.MeshBasicMaterial({color:0xcdf6ff,transparent:true,opacity:1,blending:THREE.AdditiveBlending}));
+    scene.add(coreSphere);
+    coreInner=new THREE.Mesh(new THREE.SphereGeometry(.32,24,24),
+      new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:1,blending:THREE.AdditiveBlending}));
+    scene.add(coreInner);
+
+    wire=new THREE.LineSegments(new THREE.WireframeGeometry(geo),
+      new THREE.LineBasicMaterial({color:0x00e5ff,transparent:true,opacity:.95,blending:THREE.AdditiveBlending}));
+    wire2=new THREE.LineSegments(new THREE.WireframeGeometry(new THREE.IcosahedronGeometry(1.32,3)),
+      new THREE.LineBasicMaterial({color:0x8b5cff,transparent:true,opacity:.6,blending:THREE.AdditiveBlending}));
+    scene.add(wire,wire2);
+
+    glow=new THREE.Mesh(new THREE.IcosahedronGeometry(1.6,2),
+      new THREE.MeshBasicMaterial({color:0x00e5ff,transparent:true,opacity:.12,wireframe:true,blending:THREE.AdditiveBlending}));
+    glow2=new THREE.Mesh(new THREE.SphereGeometry(1.95,24,24),
+      new THREE.MeshBasicMaterial({color:0x2f9dff,transparent:true,opacity:.09,blending:THREE.AdditiveBlending,side:THREE.BackSide}));
+    scene.add(glow,glow2);
+
+    const g2=new THREE.BufferGeometry(); pBase=new Float32Array(PCOUNT*3);
+    const col=new Float32Array(PCOUNT*3); pAmp=new Float32Array(PCOUNT);
+    const c1=new THREE.Color(0x00e5ff),c2=new THREE.Color(0x8b5cff),c3=new THREE.Color(0xffc24d);
+    for(let i=0;i<PCOUNT;i++){
+      const r=1.7+Math.pow(Math.random(),.6)*2.2, th=Math.random()*Math.PI*2, ph=Math.acos(2*Math.random()-1);
+      pBase[i*3]=r*Math.sin(ph)*Math.cos(th); pBase[i*3+1]=r*Math.cos(ph)*0.7; pBase[i*3+2]=r*Math.sin(ph)*Math.sin(th);
+      pAmp[i]=Math.random();
+      const c=Math.random()<.12?c3:(Math.random()<.5?c1:c2);
+      col[i*3]=c.r;col[i*3+1]=c.g;col[i*3+2]=c.b;
+    }
+    g2.setAttribute("position",new THREE.BufferAttribute(pBase.slice(),3));
+    g2.setAttribute("color",new THREE.BufferAttribute(col,3));
+    points=new THREE.Points(g2,new THREE.PointsMaterial({size:.05,map:sprite(),vertexColors:true,
+      transparent:true,opacity:.95,blending:THREE.AdditiveBlending,depthWrite:false,sizeAttenuation:true}));
+    scene.add(points);
+
+    const fp=[];for(let i=0;i<26;i++){const j=(Math.random()*PCOUNT)|0;fp.push(0,0,0,pBase[j*3],pBase[j*3+1],pBase[j*3+2]);}
+    const fg=new THREE.BufferGeometry();fg.setAttribute("position",new THREE.Float32BufferAttribute(fp,3));
+    filaments=new THREE.LineSegments(fg,new THREE.LineBasicMaterial({color:0x00e5ff,transparent:true,opacity:.18,blending:THREE.AdditiveBlending}));
+    scene.add(filaments);
+
+    addEventListener("resize",()=>{const w=host.clientWidth,h=host.clientHeight;renderer.setSize(w,h);cam.aspect=w/h;cam.updateProjectionMatrix();});
+    loop();
+  }
+  function loop(){
+    requestAnimationFrame(loop);
+    const t=performance.now()*.001;
+    let amp=state.listening?micLevel():0;
+    if(state.speaking){ const tl=ttsLevel(); amp=Math.max(amp, tl>0 ? Math.min(1,tl*1.6) : .25+Math.abs(Math.sin(t*9))*.55*Math.random()); }
+    kickv*=.9; amp=Math.min(1,amp+kickv); state.amp=amp;
+
+    const pos=mesh.geometry.attributes.position, arr=pos.array;
+    for(let i=0;i<arr.length;i+=3){
+      const bx=base[i],by=base[i+1],bz=base[i+2];
+      const n=Math.sin(bx*3+t*2)+Math.cos(by*3+t*1.7)+Math.sin(bz*3+t*2.3);
+      const d=1+(0.04+amp*0.5)*n*0.18;
+      arr[i]=bx*d; arr[i+1]=by*d; arr[i+2]=bz*d;
+    }
+    pos.needsUpdate=true;
+
+    const pp=points.geometry.attributes.position.array;
+    const breathe=1+amp*0.45;
+    for(let i=0;i<PCOUNT;i++){
+      const k=i*3, fl=0.06*Math.sin(t*1.5+pAmp[i]*9);
+      pp[k]=pBase[k]*(breathe+fl); pp[k+1]=pBase[k+1]*(breathe+fl); pp[k+2]=pBase[k+2]*(breathe+fl);
+    }
+    points.geometry.attributes.position.needsUpdate=true;
+    points.rotation.y=t*.06; points.rotation.x=Math.sin(t*.2)*.15;
+    points.material.size=0.06+amp*0.07; points.material.opacity=.85+amp*.15;
+    filaments.rotation.copy(points.rotation); filaments.material.opacity=.2+amp*.5;
+
+    mesh.rotation.y=wire.rotation.y=wire2.rotation.y=t*.25; mesh.rotation.x=wire.rotation.x=wire2.rotation.x=t*.12;
+    wire2.rotation.y*=-1.3;
+    glow.rotation.y=-t*.18; glow.scale.setScalar(1+amp*.3); glow2.scale.setScalar(1+amp*.18);
+    coreSphere.scale.setScalar(1+amp*.6);
+    coreInner.scale.setScalar(1+amp*.9);
+    const pulse=.85+Math.abs(Math.sin(t*2.2))*.15;
+    corona.scale.setScalar((4.8+amp*2.4)*pulse); corona.material.opacity=.4+amp*.45;
+
+    const hue=state.speaking?0x8b5cff:(state.listening?0x27ffb0:0x00e5ff);
+    wire.material.color.setHex(hue); glow.material.opacity=.1+amp*.22;
+    corona.material.color.setHex(state.speaking?0x9a6cff:(state.listening?0x3affc0:0x33ddff));
+    coreSphere.material.color.setHex(state.speaking?0xe6d4ff:(state.listening?0xd2ffee:0xcdf6ff));
+
+    const gl=$("#orb-glow"); if(gl){ gl.style.opacity=(.6+amp*.4).toFixed(2);
+      gl.style.transform=`translate(-50%,-50%) scale(${(1+amp*.4).toFixed(2)})`;
+      gl.style.left="50%"; gl.style.top="50%"; gl.style.position="absolute"; }
+
+    $("#b-aud").style.width=Math.round(amp*100)+"%"; $("#g-aud").textContent=Math.round(amp*100)+"%";
+    renderer.render(scene,cam);
+  }
+  return { init, kick:v=>{kickv=v;} };
+})();
+
+/* =========================================================================
+   VISÃO COMPUTACIONAL — câmera + análise por Claude (vision)
+   ========================================================================= */
+let camStream=null, watchTimer=null;
+async function camToggle(){
+  if(camStream){ camStream.getTracks().forEach(t=>t.stop()); camStream=null;
+    $("#cam").srcObject=null; $("#cam-off").classList.remove("hidden");
+    $("#cam-hud").classList.add("hidden"); $("#cam-corner").classList.add("hidden");
+    $("#cam-toggle").textContent="ATIVAR"; $("#cam-scan").disabled=true; $("#cam-watch").disabled=true;
+    $("#cam-st").textContent="OFF"; $("#m-cam").classList.add("off"); chip("#chip-cam",false);
+    stopWatch(); return;
+  }
+  try{
+    camStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"user"}});
+    $("#cam").srcObject=camStream; $("#cam-off").classList.add("hidden");
+    $("#cam-hud").classList.remove("hidden"); $("#cam-corner").classList.remove("hidden");
+    $("#cam-toggle").textContent="DESLIGAR"; $("#cam-scan").disabled=false; $("#cam-watch").disabled=false;
+    $("#cam-st").textContent="LIVE"; $("#m-cam").classList.remove("off"); chip("#chip-cam",true);
+  }catch(e){ permHelp("câmera",e); $("#vision-out").textContent="Acesso à câmera "+gumError(e)+"."; chip("#chip-cam",false,true); }
+}
+function grabFrame(){
+  const v=$("#cam"); if(!v.videoWidth) return null;
+  const c=document.createElement("canvas"); c.width=480; c.height=480*v.videoHeight/v.videoWidth;
+  c.getContext("2d").drawImage(v,0,0,c.width,c.height);
+  return c.toDataURL("image/jpeg",.7).split(",")[1];
+}
+async function scanScene(speakOut=true){
+  const img=grabFrame(); if(!img){ $("#vision-out").textContent="Sem feed de vídeo."; return; }
+  $("#vision-out").textContent="Observando…"; setAgent("think");
+  try{
+    const prompt=speakOut
+      ? "Olhe pela câmera agora e me diga, de forma natural e breve, o que você está vendo à minha frente — comente o que for relevante, como se estivesse olhando junto comigo."
+      : "Observe a câmera e descreva em uma frase curta o que mudou ou o que é relevante na cena agora.";
+    const ans=await brain(prompt,{image:img});
+    $("#vision-out").textContent=ans;
+    state.history.push({role:"user",content:"[câmera ao vivo] o que você vê?"});
+    state.history.push({role:"assistant",content:ans});
+    if(speakOut){ logMsg("a",ans); speak(ans); } else { setAgent(state.listening?"listen":"idle"); }
+  }catch(e){ $("#vision-out").textContent="Não consegui interpretar a cena agora."; setAgent("idle"); }
+}
+function startWatch(){
+  $("#cam-watch").textContent="PARAR"; $("#cam-watch").style.borderColor="var(--red)";
+  $("#cam-watch").style.color="var(--red)";
+  scanScene(false); watchTimer=setInterval(()=>scanScene(false),9000);
+}
+function stopWatch(){ if(watchTimer)clearInterval(watchTimer); watchTimer=null;
+  $("#cam-watch").textContent="VIGIAR"; $("#cam-watch").style.borderColor=""; $("#cam-watch").style.color="";}
+
+/* =========================================================================
+   RADAR DE NOTÍCIAS — web_search via núcleo
+   ========================================================================= */
+async function loadNews(){
+  $("#news").innerHTML='<div class="tiny">Varrendo a web… isso pode levar alguns segundos.</div>';
+  $("#m-news").classList.remove("off");
+  try{
+    const data=await apiFetch({model:"claude-sonnet-4-20250514",max_tokens:1000,
+        tools:[{type:"web_search_20250305",name:"web_search"}],
+        messages:[{role:"user",content:`Busque as notícias mais recentes (últimos dias) sobre tecnologia avançada: visão computacional, IoT/sensores, automação, inteligência artificial e computação quântica. Responda SOMENTE com um array JSON válido, sem texto extra, no formato: [{"t":"titulo curto","d":"resumo de uma frase","s":"fonte"}]. Máx 5 itens, em português.`}]});
+    let txt=(data.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("");
+    const m=txt.match(/\[[\s\S]*\]/); const items=m?JSON.parse(m[0]):[];
+    $("#news").innerHTML=items.map(n=>`<div class="nitem"><b>${escapeHtml(n.t||"")}</b>${escapeHtml(n.d||"")} <a>›&nbsp;${escapeHtml(n.s||"web")}</a></div>`).join("")
+      ||'<div class="tiny">Nenhum item retornado.</div>';
+  }catch(e){ $("#news").innerHTML='<div class="tiny">Não foi possível varrer as notícias agora.</div>'; }
+}
+
+/* =========================================================================
+   CLIMA — web_search via núcleo
+   ========================================================================= */
+async function loadWeather(){
+  try{
+    const data=await apiFetch({model:"claude-sonnet-4-20250514",max_tokens:400,
+        tools:[{type:"web_search_20250305",name:"web_search"}],
+        messages:[{role:"user",content:`Qual a previsão do tempo AGORA em São Paulo, Brasil? Responda SOMENTE com JSON válido: {"temp":"NN","cond":"condição em português","city":"São Paulo, BR","minmax":"min/max"}`}]});
+    let txt=(data.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("");
+    const m=txt.match(/\{[\s\S]*\}/); const w=m?JSON.parse(m[0]):null;
+    if(w){ $("#wx").innerHTML=`<span class="big">${escapeHtml(w.temp)}°C</span> &nbsp;${escapeHtml(w.cond)}<br><span class="tiny">${escapeHtml(w.minmax||"")} · ${escapeHtml(w.city||"")}</span>`;
+      $("#wx-city").textContent=(w.city||"BR").toUpperCase().slice(0,12); }
+  }catch(e){ $("#wx").innerHTML='<span class="tiny">Clima indisponível. Tente novamente em instantes.</span>'; }
+}
+
+/* =========================================================================
+   RELÓGIOS MULTI-FUSO — Brasília priorizado (client-side, Intl)
+   ========================================================================= */
+const ZONES=[
+  ["Brasília","America/Sao_Paulo","Brasil · DF/SP",true],
+  ["Manaus","America/Manaus","Brasil · AM",false],
+  ["Lisboa","Europe/Lisbon","Portugal",false],
+  ["Nova York","America/New_York","EUA",false],
+  ["Londres","Europe/London","Reino Unido",false],
+  ["Tóquio","Asia/Tokyo","Japão",false],
+];
+function fmt(tz){ return new Intl.DateTimeFormat("pt-BR",{timeZone:tz,hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false}).format(new Date()); }
+function buildClocks(){
+  $("#clocks").innerHTML=ZONES.map(z=>`<div class="crow ${z[3]?'bsb':''}"><div class="cz">${z[0]}<small>${z[2]}</small></div><div class="ct" data-tz="${z[1]}">--:--:--</div></div>`).join("");
+}
+function tickClocks(){
+  $$("#clocks .ct").forEach(el=>el.textContent=fmt(el.dataset.tz));
+  $("#clock-bsb").textContent=fmt("America/Sao_Paulo");
+}
+
+/* =========================================================================
+   TELEMETRIA / HUD
+   ========================================================================= */
+function setAgent(s){
+  const map={idle:["EM REPOUSO",""],think:["PROCESSANDO","think"],speak:["TRANSMITINDO","speak"],listen:["ESCUTANDO","listen"]};
+  const el=$("#agent-state"); el.className=""; el.classList.add(map[s][1]); el.textContent=map[s][0];
+}
+function setSay(t){ $("#say").textContent=t; }
+function setLatency(ms){ $("#g-lat").textContent=ms+" ms"; $("#b-lat").style.width=Math.min(100,ms/30)+"%"; }
+function chip(sel,on,warn){ const c=$(sel); c.classList.toggle("on",!!on&&!warn); c.classList.toggle("warn",!!warn); }
+
+let frames=0,lastFps=performance.now();
+function hud(){
+  frames++; const now=performance.now();
+  if(now-lastFps>1000){ $("#fps").textContent=frames+" fps"; frames=0; lastFps=now; }
+  const up=Math.floor((Date.now()-state.t0)/1000);
+  $("#d-uptime").textContent=String(Math.floor(up/60)).padStart(2,"0")+":"+String(up%60).padStart(2,"0");
+  const load=state.busy?72+Math.random()*20:10+Math.random()*8;
+  $("#g-load").textContent=Math.round(load)+"%"; $("#b-load").style.width=load+"%";
+  requestAnimationFrame(hud);
+}
+function realTelemetry(){
+  if(navigator.connection){ const c=navigator.connection;
+    $("#g-net").textContent=(c.effectiveType||"--").toUpperCase(); $("#b-net").style.width=({"4g":92,"3g":55,"2g":25}[c.effectiveType]||60)+"%";
+    chip("#chip-net",true);
+  } else { $("#g-net").textContent="ON"; chip("#chip-net",true); }
+  if(navigator.getBattery){ navigator.getBattery().then(b=>{
+    const upd=()=>{ $("#g-bat").textContent=Math.round(b.level*100)+"%"+(b.charging?" ⚡":""); $("#b-bat").style.width=(b.level*100)+"%"; };
+    upd(); b.addEventListener("levelchange",upd); b.addEventListener("chargingchange",upd);
+  }); } else { $("#g-bat").textContent="n/d"; }
+}
+
+/* ondas no dock */
+const wc=$("#wave"), wctx=wc.getContext("2d");
+function drawWave(){
+  const w=wc.width=wc.clientWidth, h=wc.height=wc.clientHeight, t=performance.now()*.004;
+  wctx.clearRect(0,0,w,h);
+  let amp=state.listening?micLevel():(state.speaking?.5:.08);
+  wctx.beginPath();
+  for(let x=0;x<w;x++){
+    const y=h/2+Math.sin(x*.05+t)*(h*.32*amp)*Math.sin(x*.013+t*.7);
+    x?wctx.lineTo(x,y):wctx.moveTo(x,y);
+  }
+  wctx.strokeStyle=state.speaking?"#8b5cff":(state.listening?"#27ffb0":"#00e5ff");
+  wctx.lineWidth=2; wctx.shadowBlur=10; wctx.shadowColor=wctx.strokeStyle; wctx.stroke();
+  requestAnimationFrame(drawWave);
+}
+
+/* partículas de fundo */
+(function(){const c=$("#fx"),x=c.getContext("2d");let p=[];
+function rs(){c.width=innerWidth;c.height=innerHeight;}rs();addEventListener("resize",rs);
+for(let i=0;i<70;i++)p.push({x:Math.random()*c.width,y:Math.random()*c.height,vx:(Math.random()-.5)*.3,vy:(Math.random()-.5)*.3,r:Math.random()*1.6+.3});
+(function a(){x.clearRect(0,0,c.width,c.height);for(const o of p){o.x+=o.vx;o.y+=o.vy;if(o.x<0||o.x>c.width)o.vx*=-1;if(o.y<0||o.y>c.height)o.vy*=-1;x.fillStyle="rgba(0,229,255,.5)";x.beginPath();x.arc(o.x,o.y,o.r,0,7);x.fill();}requestAnimationFrame(a);})();})();
+
+/* feixes de dados ligando o núcleo aos elementos da interface */
+const lc=$("#links"), lx=lc.getContext("2d");
+const LINK_TARGETS=['#m-brain','#m-cam','#m-mic','#m-news','#m-time','#cam-wrap','#news','#clocks','#g-load','#g-lat','#g-net','#d-msgs','#wave','#clock-bsb'];
+function centerOf(el){const r=el.getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2};}
+function linkBeams(){
+  const w=lc.width=innerWidth, h=lc.height=innerHeight; lx.clearRect(0,0,w,h);
+  const core=$("#core"); if(core){
+    const o=centerOf(core), t=performance.now()*.001, amp=state.amp||.05;
+    const col=state.speaking?[150,110,255]:(state.listening?[39,255,176]:[0,229,255]);
+    lx.globalCompositeOperation="lighter";
+    LINK_TARGETS.forEach((sel,i)=>{
+      const el=$(sel); if(!el) return; const p=centerOf(el);
+      const grad=lx.createLinearGradient(o.x,o.y,p.x,p.y);
+      grad.addColorStop(0,`rgba(${col[0]},${col[1]},${col[2]},${.1+amp*.18})`);
+      grad.addColorStop(1,`rgba(${col[0]},${col[1]},${col[2]},${.03+amp*.07})`);
+      lx.strokeStyle=grad; lx.lineWidth=1.2; lx.beginPath(); lx.moveTo(o.x,o.y); lx.lineTo(p.x,p.y); lx.stroke();
+      for(let k=0;k<3;k++){
+        let f=((t*.35+i*.13+k*.34)%1); const dir=(i%2===0)?f:1-f;
+        const x=o.x+(p.x-o.x)*dir, y=o.y+(p.y-o.y)*dir, rad=(1.6+amp*2.8)*3;
+        const g=lx.createRadialGradient(x,y,0,x,y,rad);
+        g.addColorStop(0,`rgba(255,255,255,${.7+amp*.3})`);
+        g.addColorStop(.4,`rgba(${col[0]},${col[1]},${col[2]},.6)`);
+        g.addColorStop(1,`rgba(${col[0]},${col[1]},${col[2]},0)`);
+        lx.fillStyle=g; lx.beginPath(); lx.arc(x,y,rad,0,7); lx.fill();
+      }
+      const pr=2+Math.abs(Math.sin(t*2+i))*1.6+amp*2.2;
+      lx.fillStyle=`rgba(${col[0]},${col[1]},${col[2]},${.3+amp*.45})`;
+      lx.beginPath(); lx.arc(p.x,p.y,pr,0,7); lx.fill();
+    });
+    lx.globalCompositeOperation="source-over";
+  }
+  requestAnimationFrame(linkBeams);
+}
+
+/* =========================================================================
+   BOOT + WIRING
+   ========================================================================= */
+const bootSteps=["Inicializando núcleo cognitivo…","Carregando módulos de IoT e visão…","Sincronizando fusos horários…","Calibrando síntese de voz pt-BR…","Estabelecendo enlace com a rede…","SAFER-X pronto."];
+let bi=0;
+const bt=setInterval(()=>{ $("#boot-msg").textContent=bootSteps[bi]; $("#boot-bar").style.width=((bi+1)/bootSteps.length*100)+"%";
+  if(++bi>=bootSteps.length){ clearInterval(bt); $("#enter").classList.remove("hidden"); }},520);
+
+$("#enter").onclick=()=>{
+  $("#boot").classList.add("gone");
+  avatar.init(); pickVoice(); initSTT(); buildClocks(); tickClocks(); setInterval(tickClocks,1000);
+  realTelemetry(); hud(); drawWave(); linkBeams();
+  chip("#chip-brain",true); $("#m-news").classList.remove("off"); $("#m-time").classList.remove("off");
+  if(SANDBOXED) showEnv('<b>Modo preview:</b> microfone e câmera ficam bloqueados neste quadro do Claude. Baixe o arquivo e abra-o servido localmente no Chrome para ativar <b>voz</b> e <b>visão</b> — o cérebro (texto, notícias e clima) já funciona normalmente aqui.');
+  loadWeather(); setTimeout(loadNews,1200);
+  setTimeout(greet,900);
+};
+async function greet(){
+  const hour=+new Intl.DateTimeFormat("pt-BR",{timeZone:"America/Sao_Paulo",hour:"2-digit",hour12:false}).format(new Date());
+  const sd=hour<12?"Bom dia":hour<18?"Boa tarde":"Boa noite";
+  try{
+    const g=await brain(`É ${sd.toLowerCase()} em Brasília. Cumprimente o Senhor Dione agora, de forma calorosa, original e natural — uma ou duas frases, com personalidade própria, sem clichês e sem soar roteirizado. Demonstre que está presente e pronto.`,{});
+    logMsg("a",g); speak(g);
+  }catch(e){
+    const opt=[`${sd}, Senhor Dione. Que bom te ver de novo — por onde começamos?`,
+      `${sd}, Senhor. Sistemas no ar e atento. O que vamos resolver hoje?`,
+      `${sd}, Dione. Estou acordado e à postos. Manda a primeira missão.`];
+    const g=opt[(Math.random()*opt.length)|0]; logMsg("a",g); speak(g);
+  }
+}
+
+$("#send").onclick=fire; $("#prompt").addEventListener("keydown",e=>{if(e.key==="Enter")fire();});
+function fire(){ const v=$("#prompt").value.trim(); if(!v)return; $("#prompt").value="";
+  const search=/notíci|últim|hoje|agora|recent|clima|tempo|cotaç|preç|lançament|2025|2026/i.test(v);
+  ask(v,{useSearch:search});
+}
+const micBtn=$("#mic");
+micBtn.addEventListener("pointerdown",e=>{ if(cloudSTT()){ e.preventDefault(); pttStart(); } });
+micBtn.addEventListener("pointerup",  e=>{ if(cloudSTT()){ e.preventDefault(); pttStop(); } });
+micBtn.addEventListener("pointerleave",()=>{ if(cloudSTT()&&pttActive) pttStop(); });
+micBtn.addEventListener("click",()=>{ if(cloudSTT()) return; state.listening?stopListen():startListen(); });
+addEventListener("keydown",e=>{ if(e.code==="Space"&&cloudSTT()&&document.activeElement!==$("#prompt")&&!pttActive){ e.preventDefault(); pttStart(); } });
+addEventListener("keyup",  e=>{ if(e.code==="Space"&&cloudSTT()&&pttActive){ e.preventDefault(); pttStop(); } });
+$("#cam-toggle").onclick=camToggle;
+$("#cam-scan").onclick=()=>scanScene(true);
+$("#cam-watch").onclick=()=>{ watchTimer?stopWatch():startWatch(); };
+$("#news-btn").onclick=loadNews;
+$("#gear").onclick=()=>$("#settings").classList.toggle("hidden");
+$("#apikey-save").onclick=()=>{
+  API_KEY=$("#apikey").value.trim(); $("#settings").classList.add("hidden");
+  if(API_KEY){ chip("#chip-brain",true); logMsg("a","Credencial recebida, Senhor. Núcleo operando em modo local."); }
+};
+$("#el-save").onclick=()=>{
+  ELEVEN_KEY=$("#elkey").value.trim(); const v=$("#elvoice").value.trim(); if(v) ELEVEN_VOICE=v;
+  $("#settings").classList.add("hidden");
+  if(ELEVEN_KEY){ $("#d-voice").textContent="HUMANA"; logMsg("a","Voz humanizada on-line, Senhor.");
+    speak("Voz humanizada ativada, Senhor. Estou pronto para conversar em tempo real."); }
+  else { $("#d-voice").textContent=state.voice?(state.voice.lang||"pt-BR"):"nativa"; }
+};
+$("#oa-save").onclick=()=>{
+  OPENAI_KEY=$("#oakey").value.trim(); const v=$("#oavoice").value.trim(); if(v) OPENAI_VOICE=v;
+  $("#settings").classList.add("hidden");
+  if(OPENAI_KEY){
+    $("#d-voice").textContent="REALISTA";
+    $("#mic").disabled=false;
+    $("#mic").title="Segure para falar (push-to-talk) — ou tecle ESPAÇO";
+    if(state.listening) stopListen();
+    $("#m-mic").classList.remove("off"); chip("#chip-mic",true);
+    logMsg("a","Voz realista e escuta ativadas, Senhor. Segure o microfone (ou a barra de espaço) e fale comigo.");
+    speak("Pronto, Senhor. Agora minha voz é realista e eu te escuto de verdade. Segure o microfone e fale — eu respondo na hora.");
+  }
+};
+</script>
+<script>
+/* ============================================================================
+   SAFER-X · camada de servidor seguro (Vercel) + voz em tempo real (OpenAI Realtime)
+   Sobrepõe o cérebro e a voz do cockpit. As chaves ficam no servidor.
+   ============================================================================ */
+(function(){
+  // ---- cérebro Claude via proxy seguro ----
+  apiFetch = async function(body){
+    const r = await fetch("/api/brain", {
+      method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)
+    });
+    if(!r.ok){ let t=""; try{t=await r.text();}catch(e){} const err=new Error("HTTP "+r.status); err.status=r.status; err.detail=t; throw err; }
+    return r.json();
+  };
+
+  // ---- desliga o STT nativo (substituído pela voz em tempo real) ----
+  initSTT = function(){};
+  startListen = function(){};
+  stopListen = function(){};
+
+  // ---- voz realista para respostas de TEXTO (via /api/tts) ----
+  async function serverSpeak(text){
+    stopSpeaking();
+    try{
+      state.speaking=true; setAgent("speak"); setSay(text);
+      const r=await fetch("/api/tts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text})});
+      if(!r.ok) throw new Error("tts "+r.status);
+      await playTTSBuffer(await r.arrayBuffer());
+    }catch(e){ console.warn("TTS servidor falhou, voz nativa:",e); state.speaking=false; ttsAnalyser=null; browserSpeak(text); }
+  }
+  speak = function(text){ if(RT.connected){ return; } serverSpeak(text); };
+
+  // ---- conversa em tempo real (speech-to-speech via WebRTC) ----
+  const RT = { connected:false, pc:null, dc:null, mic:null, audioEl:null };
+  const RT_INSTR = SYS + "\nVocê está agora em CONVERSA POR VOZ em tempo real com o Senhor Dione. Fale curto, natural e caloroso, em português do Brasil. Reaja como gente, com personalidade, sem soar roteirizado. Pode ser interrompido a qualquer momento.";
+  let rtAcc="";
+
+  async function rtConnect(){
+    if(RT.connected) return;
+    setSay("Conectando voz em tempo real…"); setAgent("think");
+    try{ RT.mic = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}}); }
+    catch(e){ permHelp("microfone",e); setAgent("idle"); return; }
+    const pc = new RTCPeerConnection(); RT.pc=pc;
+    RT.audioEl = new Audio(); RT.audioEl.autoplay = true;
+    pc.ontrack = e=>{
+      RT.audioEl.srcObject = e.streams[0];
+      try{
+        audioCtx = audioCtx || new (window.AudioContext||window.webkitAudioContext)();
+        const s = audioCtx.createMediaStreamSource(e.streams[0]);
+        ttsAnalyser = audioCtx.createAnalyser(); ttsAnalyser.fftSize=128; ttsData=new Uint8Array(ttsAnalyser.frequencyBinCount);
+        s.connect(ttsAnalyser);
+      }catch(_){}
+    };
+    try{ pc.addTrack(RT.mic.getAudioTracks()[0], RT.mic); }catch(_){}
+    try{ attachMicAnalyser(RT.mic); }catch(_){}
+
+    const dc = pc.createDataChannel("oai-events"); RT.dc=dc;
+    dc.onopen = ()=>{
+      dc.send(JSON.stringify({ type:"session.update", session:{
+        type:"realtime",
+        instructions: RT_INSTR,
+        audio:{
+          input:{ transcription:{ model:"whisper-1" }, turn_detection:{ type:"server_vad", silence_duration_ms:650 } },
+          output:{ voice: "ash" }
+        }
+      }}));
+      dc.send(JSON.stringify({ type:"response.create", response:{ instructions:"Cumprimente o Senhor Dione em uma frase calorosa, original e breve." }}));
+    };
+    dc.onmessage = onRTEvent;
+
+    try{
+      const offer = await pc.createOffer(); await pc.setLocalDescription(offer);
+      const r = await fetch("/api/realtime",{ method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({sdp:offer.sdp}) });
+      if(!r.ok){ const t=await r.text(); throw new Error(t); }
+      const answer = await r.text();
+      await pc.setRemoteDescription({ type:"answer", sdp: answer });
+    }catch(e){
+      console.warn("Falha ao conectar realtime:",e);
+      logMsg("a","Não consegui abrir a voz em tempo real, Senhor. Confira a OPENAI_API_KEY e o modelo no servidor.");
+      setSay("Falha na conexão de voz."); rtDisconnect(); return;
+    }
+
+    RT.connected=true; state.listening=true;
+    $("#mic").classList.add("live"); $("#m-mic").classList.remove("off"); chip("#chip-mic",true);
+    $("#conv-mode").textContent="REALTIME"; $("#d-voice").textContent="REALTIME";
+    setAgent("listen"); setSay("Conversa em tempo real ativa. Pode falar, Senhor.");
+  }
+
+  function rtDisconnect(){
+    RT.connected=false; state.listening=false; state.speaking=false; rtAcc="";
+    try{ RT.dc && RT.dc.close(); }catch(_){}
+    try{ RT.pc && RT.pc.close(); }catch(_){}
+    if(RT.mic){ try{ RT.mic.getTracks().forEach(t=>t.stop()); }catch(_){} }
+    RT.pc=null; RT.dc=null; RT.mic=null; ttsAnalyser=null;
+    $("#mic").classList.remove("live"); $("#m-mic").classList.add("off"); chip("#chip-mic",false);
+    $("#conv-mode").textContent="TEXTO"; $("#d-voice").textContent="REALISTA"; setAgent("idle");
+    setSay("Voz em tempo real encerrada.");
+  }
+
+  function onRTEvent(ev){
+    let m; try{ m=JSON.parse(ev.data); }catch(_){ return; }
+    const t = m.type || "";
+    if(t.indexOf("input_audio_transcription")>=0 && t.indexOf("completed")>=0){
+      const u = m.transcript || (m.item && m.item.transcript) || ""; if(u) logMsg("u", u);
+    } else if(t.indexOf("speech_started")>=0){
+      state.speaking=false; setAgent("listen");
+    } else if(t==="response.created"){
+      state.speaking=true; setAgent("speak"); rtAcc="";
+    } else if(t.indexOf("audio_transcript.delta")>=0){
+      rtAcc += (m.delta||""); setSay(rtAcc);
+    } else if(t.indexOf("audio_transcript.done")>=0){
+      const fin = (m.transcript || rtAcc).trim(); if(fin) logMsg("a", fin); rtAcc="";
+    } else if(t==="response.done" || t==="response.completed"){
+      state.speaking=false; if(RT.connected) setAgent("listen");
+    } else if(t==="error"){
+      console.warn("Realtime error:", m.error||m);
+    }
+  }
+
+  // ---- religa o botão do microfone para alternar a conversa em tempo real ----
+  function rebindMic(){
+    const old = document.getElementById("mic"); if(!old) return;
+    const btn = old.cloneNode(true); old.parentNode.replaceChild(btn, old);
+    btn.disabled = false; btn.title = "Iniciar / encerrar conversa por voz em tempo real";
+    btn.addEventListener("click", ()=>{ RT.connected ? rtDisconnect() : rtConnect(); });
+  }
+  rebindMic();
+
+  // ---- ajusta o painel CONFIG para o modo servidor ----
+  function fixConfig(){
+    const pb = document.querySelector("#settings .pbody");
+    if(pb){ pb.innerHTML = '<div class="tiny" style="line-height:1.6">Modo servidor seguro (Vercel): as chaves ficam protegidas no servidor — nada é digitado aqui.<br><br>Clique no <b>microfone</b> para iniciar a conversa por voz em tempo real (speech-to-speech). Digite no campo abaixo para conversar por texto com voz realista.</div>'; }
+  }
+  fixConfig();
+
+  // expõe para depuração
+  window.SAFERX_RT = RT;
+})();
+</script>
